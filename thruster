@@ -1,0 +1,40 @@
+import pygame
+import socketio
+import time
+
+# SocketIO客户端连接到RPi 5服务器
+sio = socketio.Client()
+SERVER_URL = 'http://192.168.1.1:5000'  # 替换为RPi 5的IP
+
+@sio.event
+def connect():
+    print('Connected to server')
+
+@sio.event
+def disconnect():
+    print('Disconnected from server')
+
+# 连接服务器
+sio.connect(SERVER_URL)
+
+# 初始化pygame和手柄
+pygame.init()
+pygame.joystick.init()
+if pygame.joystick.get_count() == 0:
+    print("未检测到游戏控制器")
+    exit(1)
+joystick = pygame.joystick.Joystick(0)
+joystick.init()
+
+INTERVAL = 0.05  # 发送间隔（秒）
+
+while True:
+    pygame.event.pump()
+    surge = -joystick.get_axis(1)  # 左摇杆Y
+    sway = joystick.get_axis(0)    # 左摇杆X
+    heave = -joystick.get_axis(4)  # 右摇杆Y
+    
+    # 发送输入到服务器
+    sio.emit('joystick_input', {'surge': surge, 'sway': sway, 'heave': heave})
+    
+    time.sleep(INTERVAL)
